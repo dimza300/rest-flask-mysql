@@ -1,5 +1,5 @@
 #import library flask and flask restful
-from flask import Flask,jsonify
+from flask import Flask,jsonify,Response,abort
 from flask_restful import reqparse,Resource,Api
 from flaskext.mysql import MySQL
 
@@ -43,13 +43,15 @@ class Students(Resource):
         cursor.execute(sql_query)
         row_header=[x[0] for x in cursor.description]
         rv=cursor.fetchall()
+        if len(rv) is 0:
+            abort(404)
         json_data=[]
         #make a json data
         for result in rv:
             json_data.append(dict(zip(row_header,result)))
         cursor.close()
         conn.close()
-        return jsonify(json_data)
+        return Response(jsonify(json_data),status=200)
 
     #post method for insert data students
     def post(self):
@@ -70,15 +72,15 @@ class Students(Resource):
             conn.commit()
             cursor.close()
             conn.close()
-            return jsonify({
+            return Response(jsonify({
                 'message': 'Data Students Has Been Created',
                 'status': True
-            })
+            }),status=201)
         else:
-            return jsonify({
+            return Response(jsonify({
                 'message': "Check your input",
                 'status': False
-            })
+            }),status=400)
 
     # put method for update data students
     def put(self):
@@ -99,10 +101,10 @@ class Students(Resource):
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({
+        return Response(jsonify({
             'message': 'Data Students Has Been Updated',
             'status': True
-        })
+        }),status=201)
 
     #delete method for delete data students
     def delete(self):
@@ -111,10 +113,10 @@ class Students(Resource):
         args = parser.parse_args()
         _id = args['id']
         if _id is None:
-            return jsonify({
+            return Response(jsonify({
                 'message' : 'ID Required',
                 'status' : False
-            })
+            }),status=400)
         else:
             try:
                 sql_query="""DELETE FROM students WHERE id='{}'""".format(_id)
@@ -124,15 +126,15 @@ class Students(Resource):
                 conn.commit()
                 cursor.close()
                 conn.close()
-                return jsonify({
+                return Response(jsonify({
                     'message': 'Data Students Has Been Deleted',
                     'status': True
-                })
+                }),status=204)
             except Exception as e:
-                return jsonify({
+                return Response(jsonify({
                     'message': e,
                     'status': False
-                })
+                }),status=500)
 
 #add route to resource
 api.add_resource(Students,'/students')
